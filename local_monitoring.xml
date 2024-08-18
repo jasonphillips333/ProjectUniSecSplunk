@@ -1,0 +1,1027 @@
+
+<dashboard version="2" theme="dark">
+    <label>Local Monitoring</label>
+    <description>Local  Server DC Monitoring Dashboard</description>
+    <definition><![CDATA[
+{
+	"dataSources": {
+		"ds_Nu5vlqsp": {
+			"type": "ds.search",
+			"options": {
+				"query": "| inputlookup geomaps_data.csv\r\n| iplocation device_ip\r\n| geostats latfield=lat longfield=lon count by method",
+				"queryParameters": {
+					"earliest": "-24h@h",
+					"latest": "now"
+				}
+			},
+			"name": "Cluster map search"
+		},
+		"ds_dutIpOMa": {
+			"type": "ds.search",
+			"options": {
+				"query": "| gentimes start=-1 | eval current_time=strftime(now(),\"%B %d, %Y %H:%M\") | table current_time",
+				"queryParameters": {
+					"earliest": "-24h@h",
+					"latest": "now"
+				}
+			},
+			"name": "Date and Time search"
+		},
+		"ds_xUMbNeaA": {
+			"type": "ds.savedSearch",
+			"options": {
+				"ref": "Date Time"
+			},
+			"name": "Table search"
+		},
+		"ds_L0O9VNJ5": {
+			"type": "ds.search",
+			"options": {
+				"query": "index=main | head 1 | eval month_year=strftime(now(),\"%c\") | table month_year",
+				"queryParameters": {
+					"earliest": "-24h@h",
+					"latest": "now"
+				}
+			},
+			"name": "Table search"
+		},
+		"ds_SpwbfcNK": {
+			"type": "ds.savedSearch",
+			"options": {
+				"ref": "Malware"
+			},
+			"name": "Malware 1 search"
+		},
+		"ds_gtvTw4pt": {
+			"type": "ds.chain",
+			"options": {
+				"query": "| fieldsummary maxvals=10",
+				"extend": "ds_SpwbfcNK"
+			},
+			"name": "Malware 2 search"
+		},
+		"ds_T2scbpJ3": {
+			"type": "ds.savedSearch",
+			"options": {
+				"ref": "PasswordDaliy"
+			},
+			"name": "Password Fail Attempts 1 search"
+		},
+		"ds_TG9W2EB4": {
+			"type": "ds.chain",
+			"options": {
+				"query": "| fieldsummary maxvals=10",
+				"extend": "ds_T2scbpJ3"
+			},
+			"name": "Password Fail Attempts 2 search"
+		},
+		"ds_4DhdCN0G": {
+			"type": "ds.search",
+			"options": {
+				"query": "index=_internal metrics kb group=per_sourcetype_thruput | eval sizeMB = round(kb/1024,2)| stats sum(sizeMB) by series | sort -sum(sizeMB) | rename sum(sizeMB) AS \"Size on Disk (MB)\"",
+				"queryParameters": {
+					"earliest": "0"
+				}
+			},
+			"name": "Table search"
+		},
+		"ds_S0BoAn1O": {
+			"type": "ds.search",
+			"options": {
+				"query": "| from inputlookup: \"geo_attr_countries\"",
+				"queryParameters": {
+					"earliest": "-24h@h",
+					"latest": "now"
+				}
+			},
+			"name": "Scatter chart search"
+		},
+		"ds_TBleE7R2": {
+			"type": "ds.search",
+			"options": {
+				"query": "index=_internal metrics kb group=per_sourcetype_thruput | eval sizeMB = round(kb/1024,2)| stats sum(sizeMB) by series | sort -sum(sizeMB) | rename sum(sizeMB) AS \"Size on Disk (MB)\"",
+				"queryParameters": {
+					"earliest": "-24h@h",
+					"latest": "now"
+				}
+			},
+			"name": "Column chart search"
+		},
+		"ds_71TYsT02": {
+			"type": "ds.search",
+			"options": {
+				"query": "host=\"ServerDC\"",
+				"queryParameters": {
+					"earliest": "-24h@h",
+					"latest": "now"
+				}
+			},
+			"name": "Events 1 search"
+		},
+		"ds_l5MySxr1": {
+			"type": "ds.chain",
+			"options": {
+				"query": "| fieldsummary maxvals=10",
+				"extend": "ds_71TYsT02"
+			},
+			"name": "Events 2 search"
+		},
+		"ds_HAz5i1Rh": {
+			"type": "ds.search",
+			"options": {
+				"query": "| makeresults \r\n| eval ppp=\"XXXXXXXXXXXXXXXXXXXXX gsystem.cpp:XXX] System_GSystem|GSystemWatcher|Idle|involuntary context switches|0|user time|0.48%|system time|0.45%|system CPU|7.14687%|iowait|0.0224%\"\r\n| append [ | makeresults | eval ppp=\"XXXXXXXXXXXXXXXXXXXXX gsystem.cpp:XXX] System_GSystem|GSystemWatcher|Idle|involuntary context switches|0|user time|0.48%|system time|0.45%|system CPU|12.14687%|iowait|0.0224%\" ]\r\n| rex field=ppp \"CPU\\|(?<system_CPU>[^\\%]+)\"\r\n| stats avg(system_CPU)",
+				"queryParameters": {
+					"earliest": "@mon",
+					"latest": "now"
+				}
+			},
+			"name": "Column chart search"
+		},
+		"ds_azpfm9E8": {
+			"type": "ds.search",
+			"options": {
+				"query": "| tstats count where index=* AND ( sourcetype=DhcpSrvLog OR sourcetype=Perfmon:CPU OR sourcetype=Perfmon:CPUTime OR sourcetype=Perfmon:FreeDiskSpace OR sourcetype=Perfmon:LocalNetwork OR sourcetype=Perfmon:LogicalDisk OR sourcetype=Perfmon:Memory OR sourcetype=Perfmon:Network OR sourcetype=Perfmon:PhysicalDisk OR sourcetype=Perfmon:Process OR sourcetype=Perfmon:ProcessorInformation OR sourcetype=Perfmon:System OR sourcetype=PerfmonMk:CPU OR sourcetype=PerfmonMk:LogicalDisk OR sourcetype=PerfmonMk:Memory OR sourcetype=PerfmonMk:Network OR sourcetype=PerfmonMk:PhysicalDisk OR sourcetype=PerfmonMk:Process OR sourcetype=PerfmonMk:ProcessorInformation OR sourcetype=PerfmonMk:System OR sourcetype=Script:InstalledApps OR sourcetype=Script:ListeningPorts OR sourcetype=Script:TimesyncConfiguration OR sourcetype=Script:TimesyncStatus OR sourcetype=WMI:CPUTime OR sourcetype=WMI:ComputerSystem OR sourcetype=WMI:FreeDiskSpace OR sourcetype=WMI:InstalledUpdates OR sourcetype=WMI:LocalNetwork OR sourcetype=WMI:LocalPhysicalDisk OR sourcetype=WMI:LocalProcesses OR sourcetype=WMI:LogicalDisk OR sourcetype=WMI:Memory OR sourcetype=WMI:ScheduledJobs OR sourcetype=WMI:Service OR sourcetype=WMI:Uptime OR sourcetype=WMI:UserAccounts OR sourcetype=WMI:Version OR sourcetype=WMI:WinEventLog:Application OR sourcetype=WMI:WinEventLog:Security OR sourcetype=WMI:WinEventLog:System OR sourcetype=WinEventLog OR sourcetype=WinHostMon OR sourcetype=WinRegistry OR sourcetype=WindowsUpdateLog OR sourcetype=XmlWinEventLog OR sourcetype=fs_notification OR sourcetype=wineventlog OR sourcetype=wmi OR sourcetype=xmlwineventlog ) by sourcetype index",
+				"queryParameters": {
+					"earliest": "-24h@h",
+					"latest": "now"
+				}
+			},
+			"name": "Line chart search"
+		},
+		"ds_NLDPBAPs": {
+			"type": "ds.search",
+			"options": {
+				"enableSmartSources": true,
+				"query": "sourcetype=Perfmon:CPU "
+			},
+			"name": "Cpu_1"
+		},
+		"ds_2khKIaxB_ds_azpfm9E8": {
+			"type": "ds.search",
+			"options": {
+				"query": "| tstats count where index=* AND ( sourcetype=DhcpSrvLog OR sourcetype=Perfmon:CPU OR sourcetype=Perfmon:CPUTime OR sourcetype=Perfmon:FreeDiskSpace OR sourcetype=Perfmon:LocalNetwork OR sourcetype=Perfmon:LogicalDisk OR sourcetype=Perfmon:Memory OR sourcetype=Perfmon:Network OR sourcetype=Perfmon:PhysicalDisk OR sourcetype=Perfmon:Process OR sourcetype=Perfmon:ProcessorInformation OR sourcetype=Perfmon:System OR sourcetype=PerfmonMk:CPU OR sourcetype=PerfmonMk:LogicalDisk OR sourcetype=PerfmonMk:Memory OR sourcetype=PerfmonMk:Network OR sourcetype=PerfmonMk:PhysicalDisk OR sourcetype=PerfmonMk:Process OR sourcetype=PerfmonMk:ProcessorInformation OR sourcetype=PerfmonMk:System OR sourcetype=Script:InstalledApps OR sourcetype=Script:ListeningPorts OR sourcetype=Script:TimesyncConfiguration OR sourcetype=Script:TimesyncStatus OR sourcetype=WMI:CPUTime OR sourcetype=WMI:ComputerSystem OR sourcetype=WMI:FreeDiskSpace OR sourcetype=WMI:InstalledUpdates OR sourcetype=WMI:LocalNetwork OR sourcetype=WMI:LocalPhysicalDisk OR sourcetype=WMI:LocalProcesses OR sourcetype=WMI:LogicalDisk OR sourcetype=WMI:Memory OR sourcetype=WMI:ScheduledJobs OR sourcetype=WMI:Service OR sourcetype=WMI:Uptime OR sourcetype=WMI:UserAccounts OR sourcetype=WMI:Version OR sourcetype=WMI:WinEventLog:Application OR sourcetype=WMI:WinEventLog:Security OR sourcetype=WMI:WinEventLog:System OR sourcetype=WinEventLog OR sourcetype=WinHostMon OR sourcetype=WinRegistry OR sourcetype=WindowsUpdateLog OR sourcetype=XmlWinEventLog OR sourcetype=fs_notification OR sourcetype=wineventlog OR sourcetype=wmi OR sourcetype=xmlwineventlog ) by sourcetype index",
+				"queryParameters": {
+					"earliest": "-24h@h",
+					"latest": "now"
+				}
+			},
+			"name": "Line chart search copy 1"
+		},
+		"ds_KPxSVfuv_ds_NLDPBAPs": {
+			"type": "ds.search",
+			"options": {
+				"enableSmartSources": true,
+				"query": "sourcetype=Perfmon:CPU "
+			},
+			"name": "Cpu_1 copy 1"
+		},
+		"ds_FCR6r279_ds_2khKIaxB_ds_azpfm9E8": {
+			"type": "ds.search",
+			"options": {
+				"query": "| tstats count where index=* AND ( sourcetype=DhcpSrvLog OR sourcetype=Perfmon:CPU OR sourcetype=Perfmon:CPUTime OR sourcetype=Perfmon:FreeDiskSpace OR sourcetype=Perfmon:LocalNetwork OR sourcetype=Perfmon:LogicalDisk OR sourcetype=Perfmon:Memory OR sourcetype=Perfmon:Network OR sourcetype=Perfmon:PhysicalDisk OR sourcetype=Perfmon:Process OR sourcetype=Perfmon:ProcessorInformation OR sourcetype=Perfmon:System OR sourcetype=PerfmonMk:CPU OR sourcetype=PerfmonMk:LogicalDisk OR sourcetype=PerfmonMk:Memory OR sourcetype=PerfmonMk:Network OR sourcetype=PerfmonMk:PhysicalDisk OR sourcetype=PerfmonMk:Process OR sourcetype=PerfmonMk:ProcessorInformation OR sourcetype=PerfmonMk:System OR sourcetype=Script:InstalledApps OR sourcetype=Script:ListeningPorts OR sourcetype=Script:TimesyncConfiguration OR sourcetype=Script:TimesyncStatus OR sourcetype=WMI:CPUTime OR sourcetype=WMI:ComputerSystem OR sourcetype=WMI:FreeDiskSpace OR sourcetype=WMI:InstalledUpdates OR sourcetype=WMI:LocalNetwork OR sourcetype=WMI:LocalPhysicalDisk OR sourcetype=WMI:LocalProcesses OR sourcetype=WMI:LogicalDisk OR sourcetype=WMI:Memory OR sourcetype=WMI:ScheduledJobs OR sourcetype=WMI:Service OR sourcetype=WMI:Uptime OR sourcetype=WMI:UserAccounts OR sourcetype=WMI:Version OR sourcetype=WMI:WinEventLog:Application OR sourcetype=WMI:WinEventLog:Security OR sourcetype=WMI:WinEventLog:System OR sourcetype=WinEventLog OR sourcetype=WinHostMon OR sourcetype=WinRegistry OR sourcetype=WindowsUpdateLog OR sourcetype=XmlWinEventLog OR sourcetype=fs_notification OR sourcetype=wineventlog OR sourcetype=wmi OR sourcetype=xmlwineventlog ) by sourcetype index",
+				"queryParameters": {
+					"earliest": "-24h@h",
+					"latest": "now"
+				}
+			},
+			"name": "Line chart search copy 2"
+		},
+		"ds_HztZQcPX_ds_HAz5i1Rh": {
+			"type": "ds.search",
+			"options": {
+				"query": "| makeresults \r\n| eval ppp=\"XXXXXXXXXXXXXXXXXXXXX gsystem.cpp:XXX] System_GSystem|GSystemWatcher|Idle|involuntary context switches|0|user time|0.48%|system time|0.45%|system CPU|7.14687%|iowait|0.0224%\"\r\n| append [ | makeresults | eval ppp=\"XXXXXXXXXXXXXXXXXXXXX gsystem.cpp:XXX] System_GSystem|GSystemWatcher|Idle|involuntary context switches|0|user time|0.48%|system time|0.45%|system CPU|12.14687%|iowait|0.0224%\" ]\r\n| rex field=ppp \"CPU\\|(?<system_CPU>[^\\%]+)\"\r\n| stats avg(system_CPU)",
+				"queryParameters": {
+					"earliest": "@mon",
+					"latest": "now"
+				}
+			},
+			"name": "Column chart search copy 1"
+		},
+		"ds_1kCC4qXq_ds_71TYsT02": {
+			"type": "ds.search",
+			"options": {
+				"query": "host=\"ServerDC\"",
+				"queryParameters": {
+					"earliest": "-24h@h",
+					"latest": "now"
+				}
+			},
+			"name": "Events 1 search copy 1"
+		},
+		"ds_uRZlO4JA_ds_l5MySxr1": {
+			"type": "ds.chain",
+			"options": {
+				"query": "| fieldsummary maxvals=10",
+				"extend": "ds_71TYsT02"
+			},
+			"name": "Events 2 search copy 1"
+		},
+		"ds_c4HN24tx_ds_S0BoAn1O": {
+			"type": "ds.search",
+			"options": {
+				"query": "| from inputlookup: \"geo_attr_countries\"",
+				"queryParameters": {
+					"earliest": "-24h@h",
+					"latest": "now"
+				}
+			},
+			"name": "Scatter chart search copy 1"
+		},
+		"ds_FZXMi7V7_ds_4DhdCN0G": {
+			"type": "ds.search",
+			"options": {
+				"query": "index=_internal metrics kb group=per_sourcetype_thruput | eval sizeMB = round(kb/1024,2)| stats sum(sizeMB) by series | sort -sum(sizeMB) | rename sum(sizeMB) AS \"Size on Disk (MB)\"",
+				"queryParameters": {
+					"earliest": "0"
+				}
+			},
+			"name": "Table search copy 1"
+		},
+		"ds_2sFPW2At_ds_azpfm9E8": {
+			"type": "ds.search",
+			"options": {
+				"query": "| tstats count where index=* AND ( sourcetype=DhcpSrvLog OR sourcetype=Perfmon:CPU OR sourcetype=Perfmon:CPUTime OR sourcetype=Perfmon:FreeDiskSpace OR sourcetype=Perfmon:LocalNetwork OR sourcetype=Perfmon:LogicalDisk OR sourcetype=Perfmon:Memory OR sourcetype=Perfmon:Network OR sourcetype=Perfmon:PhysicalDisk OR sourcetype=Perfmon:Process OR sourcetype=Perfmon:ProcessorInformation OR sourcetype=Perfmon:System OR sourcetype=PerfmonMk:CPU OR sourcetype=PerfmonMk:LogicalDisk OR sourcetype=PerfmonMk:Memory OR sourcetype=PerfmonMk:Network OR sourcetype=PerfmonMk:PhysicalDisk OR sourcetype=PerfmonMk:Process OR sourcetype=PerfmonMk:ProcessorInformation OR sourcetype=PerfmonMk:System OR sourcetype=Script:InstalledApps OR sourcetype=Script:ListeningPorts OR sourcetype=Script:TimesyncConfiguration OR sourcetype=Script:TimesyncStatus OR sourcetype=WMI:CPUTime OR sourcetype=WMI:ComputerSystem OR sourcetype=WMI:FreeDiskSpace OR sourcetype=WMI:InstalledUpdates OR sourcetype=WMI:LocalNetwork OR sourcetype=WMI:LocalPhysicalDisk OR sourcetype=WMI:LocalProcesses OR sourcetype=WMI:LogicalDisk OR sourcetype=WMI:Memory OR sourcetype=WMI:ScheduledJobs OR sourcetype=WMI:Service OR sourcetype=WMI:Uptime OR sourcetype=WMI:UserAccounts OR sourcetype=WMI:Version OR sourcetype=WMI:WinEventLog:Application OR sourcetype=WMI:WinEventLog:Security OR sourcetype=WMI:WinEventLog:System OR sourcetype=WinEventLog OR sourcetype=WinHostMon OR sourcetype=WinRegistry OR sourcetype=WindowsUpdateLog OR sourcetype=XmlWinEventLog OR sourcetype=fs_notification OR sourcetype=wineventlog OR sourcetype=wmi OR sourcetype=xmlwineventlog ) by sourcetype index",
+				"queryParameters": {
+					"earliest": "-24h@h",
+					"latest": "now"
+				}
+			},
+			"name": "Line chart search copy 3"
+		},
+		"ds_K1hrF7Qy_ds_TBleE7R2": {
+			"type": "ds.search",
+			"options": {
+				"query": "index=_internal metrics kb group=per_sourcetype_thruput | eval sizeMB = round(kb/1024,2)| stats sum(sizeMB) by series | sort -sum(sizeMB) | rename sum(sizeMB) AS \"Size on Disk (MB)\"",
+				"queryParameters": {
+					"earliest": "-24h@h",
+					"latest": "now"
+				}
+			},
+			"name": "Column chart search copy 2"
+		},
+		"ds_bFgjaJ1M_ds_T2scbpJ3": {
+			"type": "ds.savedSearch",
+			"options": {
+				"ref": "PasswordDaliy"
+			},
+			"name": "Password Fail Attempts 1 search copy 1"
+		},
+		"ds_gLH3cX2x_ds_TG9W2EB4": {
+			"type": "ds.chain",
+			"options": {
+				"query": "| fieldsummary maxvals=10",
+				"extend": "ds_T2scbpJ3"
+			},
+			"name": "Password Fail Attempts 2 search copy 1"
+		}
+	},
+	"visualizations": {
+		"viz_iYc7OmmE": {
+			"type": "splunk.map",
+			"options": {
+				"center": [
+					54,
+					-2
+				],
+				"zoom": 2,
+				"layers": [
+					{
+						"type": "bubble",
+						"latitude": "> primary | seriesByName('latitude')",
+						"longitude": "> primary | seriesByName('longitude')",
+						"bubbleSize": "> primary | frameWithoutSeriesNames('_geo_bounds_east', '_geo_bounds_west', '_geo_bounds_north', '_geo_bounds_south', 'latitude', 'longitude') | frameBySeriesTypes('number')",
+						"seriesColors": [
+							"#7b56db",
+							"#cb2196",
+							"#008c80",
+							"#9d6300",
+							"#f6540b",
+							"#ff969e",
+							"#99b100",
+							"#f4b649",
+							"#ae8cff",
+							"#8cbcff",
+							"#813193",
+							"#0051b5",
+							"#009ceb",
+							"#00cdaf",
+							"#00490a",
+							"#dd9900",
+							"#465d00",
+							"#ff677b",
+							"#ff6ace",
+							"#00689d"
+						]
+					}
+				]
+			},
+			"dataSources": {
+				"primary": "ds_Nu5vlqsp"
+			},
+			"title": "Device Location",
+			"description": "Threat Location :- United Kingdom"
+		},
+		"viz_xAL7enYy": {
+			"type": "splunk.table",
+			"options": {
+				"count": 50,
+				"dataOverlayMode": "none",
+				"drilldown": "none",
+				"showRowNumbers": false,
+				"showInternalFields": false
+			},
+			"dataSources": {
+				"primary": "ds_dutIpOMa"
+			},
+			"title": "",
+			"eventHandlers": [
+				{
+					"type": "drilldown.customUrl",
+					"options": {
+						"url": "https://www.timeanddate.com/",
+						"newTab": true
+					}
+				}
+			]
+		},
+		"viz_PBkGpTRW": {
+			"type": "splunk.events",
+			"dataSources": {
+				"primary": "ds_SpwbfcNK",
+				"fieldsummary": "ds_gtvTw4pt"
+			},
+			"title": "Malware",
+			"description": "Malware Threats"
+		},
+		"viz_z8H8GlQn": {
+			"type": "splunk.image",
+			"options": {
+				"preserveAspectRatio": true,
+				"src": "splunk-enterprise-kvstore://66b4ad33d41f2f43680c041f"
+			}
+		},
+		"viz_jFR662zQ": {
+			"type": "splunk.bar",
+			"dataSources": {
+				"primary": "ds_KPxSVfuv_ds_NLDPBAPs"
+			},
+			"title": "CPU Usage"
+		},
+		"viz_lBIQSDA4": {
+			"type": "splunk.parallelcoordinates",
+			"dataSources": {
+				"primary": "ds_FCR6r279_ds_2khKIaxB_ds_azpfm9E8"
+			},
+			"showProgressBar": false,
+			"showLastUpdated": false,
+			"title": "Event counter"
+		},
+		"viz_TtfsugQL": {
+			"type": "splunk.fillergauge",
+			"dataSources": {
+				"primary": "ds_HztZQcPX_ds_HAz5i1Rh"
+			},
+			"showProgressBar": false,
+			"showLastUpdated": false,
+			"title": "CPU Level"
+		},
+		"viz_O0yi0UC5": {
+			"type": "splunk.bar",
+			"options": {
+				"dataValuesDisplay": "minmax",
+				"resultLimit": 5000
+			},
+			"dataSources": {
+				"primary": "ds_1kCC4qXq_ds_71TYsT02",
+				"fieldsummary": "ds_uRZlO4JA_ds_l5MySxr1"
+			},
+			"showProgressBar": false,
+			"showLastUpdated": false,
+			"title": "Event Viewer"
+		},
+		"viz_I43UNhS4": {
+			"type": "splunk.scatter",
+			"options": {
+				"yAxisAbbreviation": "auto",
+				"legendTruncation": "ellipsisMiddle",
+				"xAxisLabelRotation": 0,
+				"xAxisTitleVisibility": "show",
+				"yAxisTitleVisibility": "show",
+				"xAxisAbbreviation": "off",
+				"xAxisScale": "linear",
+				"yAxisScale": "linear",
+				"legendDisplay": "right",
+				"x": "> primary | seriesByIndex(1)",
+				"y": "> primary | seriesByIndex(2)",
+				"category": "> primary | seriesByIndex(0)"
+			},
+			"dataSources": {
+				"primary": "ds_c4HN24tx_ds_S0BoAn1O"
+			}
+		},
+		"viz_NI7m7JKl": {
+			"type": "splunk.pie",
+			"dataSources": {
+				"primary": "ds_FZXMi7V7_ds_4DhdCN0G"
+			},
+			"showProgressBar": false,
+			"showLastUpdated": false,
+			"title": "Disk Space"
+		},
+		"viz_TX0b4D2i": {
+			"type": "splunk.parallelcoordinates",
+			"dataSources": {
+				"primary": "ds_2sFPW2At_ds_azpfm9E8"
+			},
+			"showProgressBar": false,
+			"showLastUpdated": false,
+			"title": "Event counter"
+		},
+		"viz_eeZ8sCyg": {
+			"type": "splunk.column",
+			"dataSources": {
+				"primary": "ds_K1hrF7Qy_ds_TBleE7R2"
+			},
+			"showProgressBar": false,
+			"showLastUpdated": false,
+			"title": "Disk space Used",
+			"options": {
+				"stackMode": "stacked",
+				"showSplitSeries": true,
+				"showIndependentYRanges": true
+			}
+		},
+		"viz_MGmXzKFR": {
+			"type": "splunk.events",
+			"dataSources": {
+				"primary": "ds_bFgjaJ1M_ds_T2scbpJ3",
+				"fieldsummary": "ds_gLH3cX2x_ds_TG9W2EB4"
+			},
+			"title": "Password Fail Attempts",
+			"description": "Daily Failed Attempts"
+		},
+		"viz_suqVesU0": {
+			"type": "splunk.singlevalueicon",
+			"options": {
+				"showValue": false,
+				"icon": "splunk-enterprise-kvstore://icon-datastore__6267aa47-166b-4079-9801-df148e603b43.svg"
+			}
+		},
+		"viz_xxynq2DI": {
+			"type": "splunk.singlevalueicon",
+			"options": {
+				"showValue": false,
+				"icon": "splunk-enterprise-kvstore://icon-profile__f42da35c-8364-4004-94b8-ff02a7d0db83.svg"
+			},
+			"eventHandlers": [
+				{
+					"type": "drilldown.customUrl",
+					"options": {
+						"url": "https://jpponline.com/splunk-help-page/"
+					}
+				}
+			]
+		},
+		"viz_SHAsmeQB": {
+			"type": "splunk.singlevalueicon",
+			"options": {
+				"showValue": false,
+				"icon": "splunk-enterprise-kvstore://icon-mobile__b5237b27-e8b3-4c1e-b247-341eea64a063.svg"
+			}
+		},
+		"viz_8mmvb3Ez": {
+			"type": "splunk.singlevalueicon",
+			"options": {
+				"showValue": false,
+				"icon": "splunk-enterprise-kvstore://66b6639ad41f2f43680c0609",
+				"backgroundColor": "> majorValue | rangeValue(backgroundColorEditorConfig)",
+				"iconColor": "#ffffff"
+			},
+			"context": {
+				"backgroundColorEditorConfig": [
+					{
+						"to": 20,
+						"value": "#D41F1F"
+					},
+					{
+						"from": 20,
+						"to": 40,
+						"value": "#D94E17"
+					},
+					{
+						"from": 40,
+						"to": 60,
+						"value": "#CBA700"
+					},
+					{
+						"from": 60,
+						"to": 80,
+						"value": "#669922"
+					},
+					{
+						"from": 80,
+						"value": "#118832"
+					}
+				]
+			},
+			"eventHandlers": [
+				{
+					"type": "drilldown.customUrl",
+					"options": {
+						"url": "https://livethreatmap.radware.com/"
+					}
+				}
+			]
+		},
+		"viz_TE93jVsb": {
+			"type": "splunk.singlevalueicon",
+			"options": {
+				"showValue": false,
+				"icon": "splunk-enterprise-kvstore://icon-cloud__b26f30f1-329e-4739-89ab-0a8a8bd24e7d.svg"
+			},
+			"eventHandlers": [
+				{
+					"type": "drilldown.customUrl",
+					"options": {
+						"url": "https://cve.mitre.org/"
+					}
+				}
+			]
+		},
+		"viz_enIqtJ4a": {
+			"type": "splunk.singlevalueicon",
+			"options": {
+				"showValue": false,
+				"icon": "splunk-enterprise-kvstore://66b66940d41f2f43680c060f",
+				"iconColor": "#ffffff"
+			},
+			"eventHandlers": [
+				{
+					"type": "drilldown.customUrl",
+					"options": {
+						"url": "https://attack.mitre.org/"
+					}
+				}
+			]
+		},
+		"viz_VbWxZ7Q6": {
+			"type": "splunk.singlevalueicon",
+			"options": {
+				"showValue": false,
+				"icon": "splunk-enterprise-kvstore://66b66e42d41f2f43680c0615",
+				"majorColor": "#ffffff",
+				"iconColor": "#ffffff"
+			},
+			"eventHandlers": [
+				{
+					"type": "drilldown.customUrl",
+					"options": {
+						"url": "https://www.speedtest.net/"
+					}
+				}
+			]
+		},
+		"viz_vAIjKxk5": {
+			"type": "splunk.singlevalueicon",
+			"options": {
+				"showValue": false,
+				"icon": "splunk-enterprise-kvstore://66b7618e98312e7c7a0632b6",
+				"iconColor": "#ffffff"
+			}
+		},
+		"viz_ClBc0GzO": {
+			"type": "splunk.singlevalueicon",
+			"options": {
+				"showValue": false,
+				"icon": "splunk-enterprise-kvstore://icon-active-directory__e03b60f5-d599-485e-bc89-67b86f2f80c7.svg"
+			},
+			"eventHandlers": [
+				{
+					"type": "drilldown.customUrl",
+					"options": {
+						"url": "https://testconnectivity.microsoft.com/tests/exo"
+					}
+				}
+			]
+		},
+		"viz_y4gcBDUp": {
+			"type": "splunk.rectangle"
+		},
+		"viz_DpGk7Fe5": {
+			"type": "splunk.rectangle"
+		},
+		"viz_FcxRYvfh": {
+			"type": "splunk.singlevalueicon",
+			"options": {
+				"showValue": false,
+				"icon": "splunk-enterprise-kvstore://icon-load-balancer__4a4261a1-51e2-45aa-b89d-2911d1ceac62.svg"
+			}
+		},
+		"viz_oxbmjeLd": {
+			"type": "splunk.singlevalueicon",
+			"options": {
+				"showValue": false,
+				"icon": "splunk-enterprise-kvstore://icon-firewall__037c3797-3676-4b94-aa5f-01293cafab69.svg"
+			},
+			"eventHandlers": [
+				{
+					"type": "drilldown.customUrl",
+					"options": {
+						"url": "https://support.microsoft.com/en-gb/windows/update-windows-3c5ae7fc-9fb6-9af1-1984-b5e0412c556a",
+						"newTab": true
+					}
+				}
+			]
+		},
+		"viz_wkKHknny": {
+			"type": "splunk.singlevalueicon",
+			"options": {
+				"showValue": false,
+				"icon": "splunk-enterprise-kvstore://icon-gear__c99f1d12-649f-433a-890a-bbf5cf548a6a.svg"
+			},
+			"eventHandlers": [
+				{
+					"type": "drilldown.customUrl",
+					"options": {
+						"url": "https://www.virustotal.com/gui/home/upload"
+					}
+				}
+			]
+		}
+	},
+	"inputs": {
+		"input_global_trp": {
+			"type": "input.timerange",
+			"options": {
+				"token": "global_time",
+				"defaultValue": "-24h@h,now"
+			},
+			"title": "Global Time Range"
+		},
+		"input_DtZRqn6F": {
+			"options": {
+				"items": [
+					{
+						"label": "All",
+						"value": "*"
+					},
+					{
+						"label": "Cpu Usage",
+						"value": "item001"
+					},
+					{
+						"label": "Disk Storage",
+						"value": "item002"
+					},
+					{
+						"label": "Password Attempts",
+						"value": "menu_v3"
+					},
+					{
+						"label": "Maleware Attacks",
+						"value": "menu_v4"
+					}
+				],
+				"defaultValue": "*",
+				"token": "dd_TPZNSqR7"
+			},
+			"title": "Data Visualization Selection",
+			"type": "input.dropdown",
+			"dataSources": {
+				"primary": "ds_T2scbpJ3"
+			}
+		},
+		"input_RHRlfi1H": {
+			"options": {
+				"items": [
+					{
+						"label": "All",
+						"value": "*"
+					},
+					{
+						"label": "CVE",
+						"value": "https://cve.mitre.org/"
+					},
+					{
+						"label": "Password",
+						"value": "item002"
+					}
+				],
+				"token": "dd_Kue7cEjB"
+			},
+			"title": "Dropdown Input Title",
+			"type": "input.dropdown",
+			"dataSources": {
+				"primary": "ds_T2scbpJ3"
+			}
+		}
+	},
+	"layout": {
+		"type": "absolute",
+		"options": {
+			"width": 1440,
+			"height": 2585,
+			"display": "auto"
+		},
+		"structure": [
+			{
+				"item": "viz_z8H8GlQn",
+				"type": "block",
+				"position": {
+					"x": -230,
+					"y": -250,
+					"w": 1670,
+					"h": 1620
+				}
+			},
+			{
+				"item": "viz_jFR662zQ",
+				"type": "block",
+				"position": {
+					"x": 30,
+					"y": 50,
+					"w": 300,
+					"h": 300
+				}
+			},
+			{
+				"item": "viz_lBIQSDA4",
+				"type": "block",
+				"position": {
+					"x": 690,
+					"y": 50,
+					"w": 300,
+					"h": 300
+				}
+			},
+			{
+				"item": "viz_TtfsugQL",
+				"type": "block",
+				"position": {
+					"x": 360,
+					"y": 50,
+					"w": 300,
+					"h": 300
+				}
+			},
+			{
+				"item": "viz_O0yi0UC5",
+				"type": "block",
+				"position": {
+					"x": 1020,
+					"y": 50,
+					"w": 300,
+					"h": 300
+				}
+			},
+			{
+				"item": "viz_I43UNhS4",
+				"type": "block",
+				"position": {
+					"x": 1020,
+					"y": 380,
+					"w": 300,
+					"h": 300
+				}
+			},
+			{
+				"item": "viz_NI7m7JKl",
+				"type": "block",
+				"position": {
+					"x": 360,
+					"y": 380,
+					"w": 300,
+					"h": 300
+				}
+			},
+			{
+				"item": "viz_TX0b4D2i",
+				"type": "block",
+				"position": {
+					"x": 690,
+					"y": 380,
+					"w": 300,
+					"h": 300
+				}
+			},
+			{
+				"item": "viz_eeZ8sCyg",
+				"type": "block",
+				"position": {
+					"x": 40,
+					"y": 380,
+					"w": 300,
+					"h": 300
+				}
+			},
+			{
+				"item": "viz_MGmXzKFR",
+				"type": "block",
+				"position": {
+					"x": 40,
+					"y": 710,
+					"w": 300,
+					"h": 300
+				}
+			},
+			{
+				"item": "viz_PBkGpTRW",
+				"type": "block",
+				"position": {
+					"x": 360,
+					"y": 710,
+					"w": 300,
+					"h": 300
+				}
+			},
+			{
+				"item": "viz_suqVesU0",
+				"type": "block",
+				"position": {
+					"x": 1370,
+					"y": 40,
+					"w": 50,
+					"h": 50
+				}
+			},
+			{
+				"item": "viz_xxynq2DI",
+				"type": "block",
+				"position": {
+					"x": 1370,
+					"y": 970,
+					"w": 50,
+					"h": 50
+				}
+			},
+			{
+				"item": "viz_SHAsmeQB",
+				"type": "block",
+				"position": {
+					"x": 1370,
+					"y": 120,
+					"w": 50,
+					"h": 50
+				}
+			},
+			{
+				"item": "viz_8mmvb3Ez",
+				"type": "block",
+				"position": {
+					"x": 1370,
+					"y": 890,
+					"w": 50,
+					"h": 50
+				}
+			},
+			{
+				"item": "viz_TE93jVsb",
+				"type": "block",
+				"position": {
+					"x": 1370,
+					"y": 820,
+					"w": 50,
+					"h": 50
+				}
+			},
+			{
+				"item": "viz_enIqtJ4a",
+				"type": "block",
+				"position": {
+					"x": 1370,
+					"y": 740,
+					"w": 50,
+					"h": 60
+				}
+			},
+			{
+				"item": "viz_VbWxZ7Q6",
+				"type": "block",
+				"position": {
+					"x": 1370,
+					"y": 670,
+					"w": 50,
+					"h": 50
+				}
+			},
+			{
+				"item": "viz_xAL7enYy",
+				"type": "block",
+				"position": {
+					"x": 1030,
+					"y": -40,
+					"w": 300,
+					"h": 80
+				}
+			},
+			{
+				"item": "viz_iYc7OmmE",
+				"type": "block",
+				"position": {
+					"x": 690,
+					"y": 710,
+					"w": 620,
+					"h": 300
+				}
+			},
+			{
+				"item": "viz_vAIjKxk5",
+				"type": "block",
+				"position": {
+					"x": 1370,
+					"y": 600,
+					"w": 50,
+					"h": 50
+				}
+			},
+			{
+				"item": "viz_ClBc0GzO",
+				"type": "block",
+				"position": {
+					"x": 1370,
+					"y": 530,
+					"w": 50,
+					"h": 50
+				}
+			},
+			{
+				"item": "viz_y4gcBDUp",
+				"type": "block",
+				"position": {
+					"x": 0,
+					"y": 1040,
+					"w": 1330,
+					"h": 10
+				}
+			},
+			{
+				"item": "viz_DpGk7Fe5",
+				"type": "block",
+				"position": {
+					"x": 1320,
+					"y": 0,
+					"w": 10,
+					"h": 1040
+				}
+			},
+			{
+				"item": "viz_FcxRYvfh",
+				"type": "block",
+				"position": {
+					"x": 1370,
+					"y": 220,
+					"w": 50,
+					"h": 50
+				}
+			},
+			{
+				"item": "viz_oxbmjeLd",
+				"type": "block",
+				"position": {
+					"x": 1370,
+					"y": 460,
+					"w": 50,
+					"h": 50
+				}
+			},
+			{
+				"item": "viz_wkKHknny",
+				"type": "block",
+				"position": {
+					"x": 1370,
+					"y": 380,
+					"w": 50,
+					"h": 50
+				}
+			}
+		],
+		"globalInputs": [
+			"input_global_trp",
+			"input_DtZRqn6F",
+			"input_RHRlfi1H"
+		]
+	},
+	"title": "Local Monitoring",
+	"description": "Local  Server DC Monitoring Dashboard",
+	"defaults": {
+		"dataSources": {
+			"ds.search": {
+				"options": {
+					"queryParameters": {
+						"latest": "$global_time.latest$",
+						"earliest": "$global_time.earliest$"
+					}
+				}
+			}
+		}
+	}
+}
+    ]]></definition>
+    <meta type="hiddenElements"><![CDATA[
+{
+	"hideEdit": false,
+	"hideOpenInSearch": false,
+	"hideExport": false
+}
+    ]]></meta>
+</dashboard>
