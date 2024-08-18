@@ -1,0 +1,2 @@
+splunk xml location
+C:\Program Files\Splunk\etc\apps\search\local\data\ui\views
